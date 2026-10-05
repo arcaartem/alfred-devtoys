@@ -7,7 +7,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"regexp"
+	"net/url"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -16,8 +16,6 @@ import (
 
 	"github.com/cage1016/alfred-devtoys/lib"
 )
-
-var reUrl = regexp.MustCompile(`^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$`)
 
 // imageB64Cmd represents the imageB64 command
 var imageB64Cmd = &cobra.Command{
@@ -35,6 +33,11 @@ func contains(s []string, e string) bool {
 	return false
 }
 
+func isURL(s string) bool {
+	u, err := url.Parse(s)
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
+}
+
 func preview(s string) string {
 	if len(s) > 100 {
 		return s[:100] + "…"
@@ -49,7 +52,7 @@ func runImageB64(cmd *cobra.Command, args []string) {
 	}
 	logrus.Debugf("query: %s", query)
 
-	if u := strings.TrimSpace(query); reUrl.MatchString(u) {
+	if u := strings.TrimSpace(query); isURL(u) {
 		path, err := lib.Download(u, wf.DataDir())
 		if err != nil {
 			wf.NewItem(fmt.Sprintf("`%s` download fail", u)).Subtitle("Try a different query?").Icon(Base64ImgGrayIcon)
